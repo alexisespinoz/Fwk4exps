@@ -1,3 +1,4 @@
+from pprint import pprint
 from classes.Algorithm import Algorithm
 from classes.Tree import Tree
 from scipy import stats
@@ -14,37 +15,82 @@ def speculativeExecute():
     s = set()
     s.add(root)
     i=0
-    while (i<100):
+    while (i<10):
         print("-------------------------------------------------------------")
         print("iteracion: "+str(i))
         n = best(s)
         run(n)
         update(s)
         i=i+1
+        addChildrens(s,n)
         print("-------------------------------------------------------------")
 
 def best(s):
+    print("-------------------------------------------------------------")
+    print("selecting best node to run")
+    print("largo de s"+str(len(s)))
     ####Parte1###
     # Selecciona el nodo no visitado con max probabilidad conjunta
+    best=root
+    max_pc=-1
+    for nod in s:
+        print("he sido visitado?: "+str(nod.visited))
+        print("soy nodo hoja?: "+str(nod.isLeaf()))
+        print("mi probabilidad conjunta es: "+str(nod.jointProbability()))
+        if ((not nod.visited or nod.isLeaf())and nod.jointProbability()>max_pc):
+            best=nod
+            max_pc=nod.jointProbability()
+    #print("probabilidadconjunta:"+str(max_pc))
 
     ####Parte2###
-    #bestp=-1
-    #bestnode=root
-    #leafs=root.leafs()
-    return root
+    min_p=best.bestp1p2()
+    best2=Tree(None,None,None)
+    best2=best
+    while best.parent!=None:
+        if best.parent.left == best:
+            val = best.parent.p1
+        if best.parent.right == best:
+            val = best.parent.p2
+        if val< min_p:
+            min_p = val
+            best2= best.parent
+        best=best.parent
+    #print()
+    print("-------------------------------------------------------------")
+    return best2
 
 def run(n):
+    if n.visited:
+        id1=n.alg1.id
+        id2=n.alg2.id
+        i = selectInstance(n)
+        print("selected Instance: "+str(i))
+        resultado_a1=resultados_experimentos[i][id1]
+        resultado_a2=resultados_experimentos[i][id2]
+        global_results[i][id1]=resultado_a1
+        global_results[i][id2]=resultado_a2
+        print("Resultado algoritmo "+str(id1)+" :"+str(resultado_a1))
+        print("Resultado algoritmo "+str(id2)+" :"+str(resultado_a2))
+    else:
+        for j in range(1,3):
+            id1=n.alg1.id
+            id2=n.alg2.id
+            i = selectInstance(n)
+            print("selected Instance: "+str(i))
+            resultado_a1=resultados_experimentos[i][id1]
+            resultado_a2=resultados_experimentos[i][id2]
+            global_results[i][id1]=resultado_a1
+            global_results[i][id2]=resultado_a2
+            print("Resultado algoritmo "+str(id1)+" :"+str(resultado_a1))
+            print("Resultado algoritmo "+str(id2)+" :"+str(resultado_a2))
+
+def addChildrens(s,n):
+    if n.visited==False:
+        if n.left!=None:
+            s.add(n.left)
+        if n.right!=None:
+            s.add(n.right)
     n.visited=True
-    id1=n.alg1.id
-    id2=n.alg2.id
-    i = selectInstance(n)
-    print("selected Instance: "+str(i))
-    resultado_a1=resultados_experimentos[i][id1]
-    resultado_a2=resultados_experimentos[i][id2]
-    global_results[i][id1]=resultado_a1
-    global_results[i][id2]=resultado_a2
-    print("Resultado algoritmo "+str(id1)+" :"+str(resultado_a1))
-    print("Resultado algoritmo "+str(id2)+" :"+str(resultado_a2))
 
 def selectInstance(n): #mejorar para el caso de que se haya ejecutado uno y el otro no
     n.lastInstanceIndex=n.lastInstanceIndex + 1
@@ -80,8 +126,9 @@ def update(s):
                 data1.append(global_results[i][id1])
                 data2.append(global_results[i][id2])
                 #difference.append(global_results[i][id1]-global_results[i][id2])
-        mean1=np.mean(data1)
+        #if len(data1) > 2 and len(data2) > 2 :
         mean2=np.mean(data2)
+        mean1=np.mean(data1)
         variance1=np.var(data1)
         variance2=np.var(data2)
         media=mean1-mean2
@@ -93,9 +140,9 @@ def update(s):
         print("calculated probability"+str(p))
         n.p1=p
         n.p2=1-p
-        n.data = n.alg1.name+"("+str(n.p1)+") vs "+n.alg2.name+"("+str(n.p2)+")"
+        #n.data = n.alg1.name+"("+str(n.p1)+") vs "+n.alg2.name+"("+str(n.p2)+")"
         #n.left.pj=n.p1*
-        n.printTree()
+    root.printTree()
 
 def insert(s,v):
     s.append(v[0])
@@ -128,8 +175,8 @@ alg3=Algorithm("algoritmo3",2)
 ########### Creacion de arbol de procesos ################
 
 root=Tree(alg1,alg2,None)
-root.left=Tree(alg2,alg3,root)
-root.right=Tree(alg3,alg2,root)
+root.left=Tree(alg1,alg3,root)
+root.right=Tree(alg2,alg3,root)
 
 #algoritmos=[alg1, alg2, alg3]
 
