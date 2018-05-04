@@ -1,6 +1,7 @@
 from anytree import Node, RenderTree
 class Tree(object):
-    def __init__(self,alg1,alg2,parent):
+    def __init__(self,alg1,alg2,parent,_id):
+        self.id=_id
         self.left = None
         self.right = None
         self.p1=0.5
@@ -10,8 +11,15 @@ class Tree(object):
         self.lastInstanceIndex = -1
         self.parent = parent
         self.visited = False
-        #self.jp = 1              #joint probability
+        self.jp_vs_run = []              #joint probability
 
+    def setMaxp(self):
+        if self.p1>self.p2:
+            self.p1=1
+            self.p2=0
+        else:
+            self.p2=1
+            self.p1=0
     def children():
         vec=[]
         vec.append(self.left)
@@ -32,7 +40,7 @@ class Tree(object):
 
     def jointProbability(self):
         if self.parent==None:
-            return 1
+            return self.bestp1p2()
         node=self
         jp=1
         if node.p1>node.p2:
@@ -55,3 +63,9 @@ class Tree(object):
             return self.p1
         else:
             return self.p2
+
+    def save_jp(self):
+        (self.jp_vs_run).append(self.jointProbability())
+
+    def get_jp_vs_run(self):
+        return self.jp_vs_run
