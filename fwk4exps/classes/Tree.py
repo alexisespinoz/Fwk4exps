@@ -8,7 +8,7 @@ sys.setdefaultencoding('utf8')
 id=0
 
 class Tree(object):
-    def __init__(self,alg1,alg2,parent,_id):
+    def __init__(self,alg1,alg2,parent,_id,ins_ord):
         self.id=_id
         self.left = None
         self.right = None
@@ -19,6 +19,7 @@ class Tree(object):
         self.alg1=alg1
         self.alg2=alg2
         self.lastInstanceIndex = -1
+        self.ins_ord = ins_ord
         #self.times_ran=0
         self.parent = parent
         self.visited = False
@@ -186,7 +187,16 @@ class Tree(object):
         return (self.p1_vs_run,self.p2_vs_run)
 
     def executeAlgorithm1(self, instance):
-        alg1.run(instance)
+        return self.alg1.run(instance)
+
     
     def executeAlgorithm2(self, instance):
-        alg2.run(instance)
+        return self.alg2.run(instance)
+
+    def selectInstance(self): #mejorar para el caso de que se haya ejecutado uno y el otro no
+    #print("seleccionando instancia")
+        self.lastInstanceIndex=self.lastInstanceIndex + 1
+        index=self.lastInstanceIndex
+        i=self.ins_ord[index]
+        return i
+

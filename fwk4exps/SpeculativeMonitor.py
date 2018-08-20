@@ -6,7 +6,7 @@ from classes.detectInput import KeyPoller
 #from classes.Algorithm import Algorithm
 from classes.Tree import Tree
 from classes.Strategy import Strategy
-from classes.Strategy import Metric
+#from classes.Strategy import Metric
 from scipy import stats
 from scipy.stats import norm,t
 from prettytable import PrettyTable
@@ -28,20 +28,39 @@ def suppress_stdout():
         finally:
             sys.stdout = old_stdout
 #####################################
+
+
+pi = None
+resultados_experimentos=None
+selected_vs_run = []
+__count = None
+__msg = None
+__speculativeNode = None
+root = None
+pifile=None
+experimentalDesign = None
+instance_order = None
+instancias = None
+global_results =None
+
+s2id = {}
+s_id =0
+
 class SpeculativeMonitor(object):
     """docstring for SpeculativeMonitor"""
-    def __init__(self, experimentalDesign):
-        self.arg = arg
-        self.selected_vs_run = []
-        self.__count = None
-        self.__msg = None
-        self.__speculativeNode = None
-        self.root = None
-        self.experimentalDesign = experimentalDesign
+    def __init__(self, expDesign,PI):
+        global experimentalDesign
+        experimentalDesign = expDesign
+        global pifile
+        pifile = PI
 
-def bestStrategy(S1, S2, pi, metric, delta_sig):
+
+def bestStrategy(S1, S2, range, delta_sig):
     ##print("______________________")
-    ##print("entra en bestStrategy")
+    print("entra en bestStrategy")
+    #if self.pi is None:
+    #   self.pi = pi 
+
     global __count, __speculativeNode, __msg
     ##print("count: "+str(__count))
     if __count < len(__msg):
@@ -52,12 +71,13 @@ def bestStrategy(S1, S2, pi, metric, delta_sig):
             __count=__count+1
             return S2
     ##print "creating speculative node"
-    __speculativeNode=Tree(S1,S2,None,0)
+    ins_ord = instanceOrderGenerator(range)
+    __speculativeNode=Tree(S1,S2,None,0,ins_ord)
     raise ValueError
 
 def retrieveNode(aux):
     ##print("______________________")
-    ##print("retrieve node")
+    print("retrieve node")
     ##print("______________________")
     global __count, __speculativeNode, __msg
 
@@ -77,21 +97,17 @@ def retrieveNode(aux):
     ##print("______________________")
     return __speculativeNode
 
-def readData(results):
-    f=[]
-    f=np.genfromtxt(results)
-    return f
-
 def speculativeExecute():
     ##print("-------------------------------------------------------------")
-    ##print("---------------------speculativeExecute----------------------")
+    print("---------------------speculativeExecute----------------------")
     ##print("-------------------------------------------------------------")
     global root
     #v = null
     s = set()
     root = retrieveNode(None)
     if root:
-        ##print("raiz agregada :)")
+        print("raiz agregada :)")
+        #print root.alg1.pathExe
         s.add(root)
     runNode(root)
     update(s)
@@ -122,24 +138,24 @@ def speculativeExecute():
                 print("iteracion: "+str(i))
                 #root.printTree()
             else:
-                with suppress_stdout():
-                    n = best(s)
-                    if n==None:
-                        ##print("se cumple criterio de salida")
-                        break
-                    s.add(n)
-                    runNode(n)
-                    update(s)
-                    i=i+1
-                    print("iteracion: "+str(i))
-                    root.printTree()
+                #with suppress_stdout():
+                n = best(s)
+                if n==None:
+                    ##print("se cumple criterio de salida")
+                    break
+                s.add(n)
+                runNode(n)
+                update(s)
+                i=i+1
+                print("iteracion: "+str(i))
+                root.printTree()
 
         ##print("-------------------------------------------------------------")
 
 def best(s):
-    ##print("_____________________________________________")
-    ##print("selecting best node to run")
-    ##print("_____________________________________________")
+    print("_____________________________________________")
+    print("selecting best node to run")
+    print("_____________________________________________")
     ##print("-> Largo de s(coleccion de nodos del arbol):"+str(len(s)))
     ####Parte1###
     # Selecciona el nodo no visitado u hoja con max probabilidad conjunta
@@ -154,16 +170,9 @@ def best(s):
     if best==None:
         ##print("no se encontro nodo hoja?")
         return None
-    ##print("mejor probabilidad conjunta:"+str(max_pc))
-    #maxpc_vs_iter.append(max_pc)
-    ####Parte2###
-    #debemos encontrar el minimo de la rama
-    #en primera instancia es el nodo hoja que maximiza la pj
+
     max_pvalue=99999999999999#best.lastInstanceIndex#pvalue
-    #best2 guardara el
-    #best2=Tree(None,None,None)
-    #aux=Tree(None,None,None)
-    #aux=best2
+
     aux=best
     best2=best
     ##print("buscando nodo de la rama con mayor pvalue")# con menos ejecuciones
@@ -206,17 +215,62 @@ def best(s):
         ##print("nodo seleccionado : ",best2.id)
         return best2
 
+def mapa(alg):
+    global s2id, s_id
+
+    exists = False
+
+    for key in s2id:
+        if key == alg:
+            exists = True
+
+    if exists:
+        return s2id[alg]
+    else:
+        s2id[alg] = s_id
+        s_id = s_id + 1
+        return s2id[alg]
+
+def reshape(id1,id2):
+    global global_results
+    
+    dimensiones=np.shape(global_results)
+    print "dimensiones antes"
+    print dimensiones
+    num_alg = dimensiones[1] #numero de algoritmos
+    num_ins = dimensiones[0] #numero instancias
+    if (id1 >= num_alg or id2 >= num_alg):
+        if(id1>id2):
+            while num_alg<=id1 :
+                new_column = np.ones((num_ins,1))*-1
+                global_results = np.hstack((global_results,new_column))
+                num_alg =num_alg+1
+        else:
+            while num_alg<=id2 :
+                new_column = np.ones((num_ins,1))*-1
+                global_results = np.hstack((global_results,new_column))
+                num_alg =num_alg+1
+        print "dimensiones despues"
+        print dimensiones   
+
 def runNode(n):
-    ##print "______________________"
-    ##print("corriendo algoritmos en nodo"+str(n.id))
-    time.sleep(0.01)
+    global instancias
+    print "______________________"
+    print("corriendo algoritmos en nodo"+str(n.id))
+    ###_____________Agregar columnas si el numero de algoritmos e mayor que el numero de columnas actual de la matriz de resultados globales
+    
+    
+    #time.sleep(0.01)
     if n.visited:
-        id1=n.alg1.id
-        id2=n.alg2.id
-        i = selectInstance(n)
+        id1 = mapa(n.alg1)#.id
+        id2 = mapa(n.alg2)#.id
+        
+        reshape(id1,id2)
+        i = n.selectInstance()
+        instancia = instancias[i]
         ##print("selected Instance: "+str(i))
-        resultado_a1= n.executeAlgorithm1(i)#resultados_experimentos[i][id1]
-        resultado_a2= n.executeAlgorithm2(i)#resultados_experimentos[i][id2]
+        resultado_a1= n.executeAlgorithm1(instancia)#resultados_experimentos[i][id1]
+        resultado_a2= n.executeAlgorithm2(instancia)#resultados_experimentos[i][id2]
         global_results[i][id1]=resultado_a1
         global_results[i][id2]=resultado_a2
         ##print("Resultado algoritmo "+str(id1)+" :"+str(resultado_a1))
@@ -228,12 +282,16 @@ def runNode(n):
         #maxpc_vs_run[n.id][n.lastInstanceIndex]=n.jointProbability()
     else:
         for j in range(1,4):
-            id1=n.alg1.id
-            id2=n.alg2.id
-            i = selectInstance(n)
+            id1 = mapa(n.alg1)#.id
+            id2 = mapa(n.alg2)#.id
+            
+            reshape(id1,id2)
+            #i = selectInstance(n)
             #print("selected Instance: "+str(i))
-            resultado_a1=n.executeAlgorithm1(i)#resultados_experimentos[i][id1]
-            resultado_a2=n.executeAlgorithm2(i)#resultados_experimentos[i][id2]
+            i = n.selectInstance()
+            instancia = instancias[i]
+            resultado_a1=n.executeAlgorithm1(instancia)#resultados_experimentos[i][id1]
+            resultado_a2=n.executeAlgorithm2(instancia)#resultados_experimentos[i][id2]
             global_results[i][id1]=resultado_a1
             global_results[i][id2]=resultado_a2
             #print("Resultado algoritmo "+str(id1)+" :"+str(resultado_a1))
@@ -252,62 +310,38 @@ def runNode(n):
 
 def addChildrens(s,n):
     if n.visited==False:
-        #print("agregando hijos")
+        print("agregando hijos")
         if n.left!=None:
             s.add(n.left)
         if n.right!=None:
             s.add(n.right)
     n.visited=True
 
-def selectInstance(n): #mejorar para el caso de que se haya ejecutado uno y el otro no
-    #print("seleccionando instancia")
-    n.lastInstanceIndex=n.lastInstanceIndex + 1
-    index=n.lastInstanceIndex
-    i=instance_order[index]
-    return i
 
-def inicializarResultadosGlobales():
-    #print("inicializarResultadosGlobales")
-    dimensiones=np.shape(resultados_experimentos)
-    filas=dimensiones[0]
-    columnas=dimensiones[1]
-    globalr=[]
-    for i in range(filas):
-        row=[]
-        for j in range(columnas):
-            row.append(-1)
-        globalr.append(row)
-    return globalr
-    ##print(globalr)
 
 def update(s):
     global root
-    #print("recalculando probabilidades del arbol")
-    dimensiones=np.shape(resultados_experimentos)
+    print("recalculando probabilidades del arbol")
+    dimensiones=np.shape(global_results)
     filas=dimensiones[0]
     #columnas=dimensiones[1]
     for n in s:
         if n.p1==1 or n.p2==1:
             continue
         recalculateMetric(n, filas)
-        #n.data = n.alg1.name+"("+str(n.p1)+") vs "+n.alg2.name+"("+str(n.p2)+")"
-        #n.left.pj=n.p1*
+
     clearScreen()
     root.printTree()
 
 def recalculateMetric(n, filas):
-    id1=n.alg1.id
-    id2=n.alg2.id
+    id1 = mapa(n.alg1)#.id
+    id2 = mapa(n.alg2)#.id
     data1=[]
     data2=[]
     for i in range(0,filas):
         if(global_results[i][id1] != -1 and global_results[i][id2] != -1):
             data1.append(global_results[i][id1])
             data2.append(global_results[i][id2])
-    ##print ("resultados alg"+str(id1)+" : ")
-    ##print data1
-    ##print ("resultados alg"+str(id2)+" : ")
-    ##print data2
 
     mean2=np.mean(data2)
     mean1=np.mean(data1)
@@ -315,23 +349,13 @@ def recalculateMetric(n, filas):
     variance2=np.var(data2)
     media=mean1-mean2
     desviacion_tipica = np.sqrt((variance1/len(data1))+(variance2/len(data2)))
-    ##print "media1: "+str(mean1)
-    ##print "media2: "+str(mean2)
-    ##print "variance1: "+str(variance1)
-    ##print "variance2: "+str(variance2)
-    ##print("numero de instancias:"+str(len(data1)))
-    ##print("Media: "+str(media))
-    ##print("Desviacion estandar:"+str(desviacion_tipica))
-    #if len(data1)<30:
+
     estadistico_t=(0-media)/desviacion_tipica
     ##print "estadistico t:" + str(estadistico_t)
     grados_de_libertad=len(data1)-2
     #print "grados_de_libertad: " + str(grados_de_libertad)
     p=1-t.cdf(estadistico_t,grados_de_libertad)
-    #print "probabilidad a>b:" + str(p)
-    #else:
-    #p=1-norm.cdf(0, media, desviacion_tipica)
-    ##print("calculated probability"+str(p))
+
     t_test=stats.ttest_ind(data1,data2)
     n.pvalue=t_test[1]
     n.p1=p
@@ -340,32 +364,53 @@ def recalculateMetric(n, filas):
     n.save_p()
     n.save_jp()
     n.save_pvalue()
-    #Plotter.save_p(n)
-    #Plotter.save_pvalue(n)#n.save_pvalue()
-    #Plotter.save_jp(n)
+
 
 def clearScreen():
     for i in range(1,25):
         print "."
 
+def readData(path):
+    #f=[]
+    #f=np.genfromtxt(results)
+    #return f
+    aux = copy.copy(path)
+    aux = aux.split("/")
+    aux.pop()
+    aux.pop(0)
+    absolutePath = ""
+    for e in aux:
+        absolutePath = absolutePath + "/" + e
+    absolutePath = absolutePath + "/"
+    print path
+    print absolutePath
+    with open(path) as f:
+        content = f.readlines()
+
+    return content
+
+def instanceOrderGenerator(range):
+    instance_order=np.random.permutation(len(range))+range[0]
+    return instance_order
+
+def createGlobalResults():
+    global global_results
+    global instancias
+    length = len(instancias)
+    global_results = np.ones(shape =(length,2))*-1
+
 def run():
-    ########### Leer Archivo con Resultados ################
-
-    namedata = 'data.txt'
-    resultados_experimentos=readData(namedata)
-
-    ########### Inicializar Resultados Globales en -1 ################
-
-    global_results=inicializarResultadosGlobales()
-
-
-    ########### Seleccion de metrica #######################
-
 
     ########### Generar orden de instancias ################
+    global instancias
 
+
+    instancias=readData(pifile)
+    #print pifile
+    #print pi[-1]
+    createGlobalResults()
     np.random.seed(13)
-    instance_order=np.random.permutation(len(global_results))
+    #instance_order=np.random.permutation(len(pi))
 
 
     #print(instance_order)
