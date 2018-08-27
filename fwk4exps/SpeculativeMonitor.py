@@ -187,7 +187,7 @@ def best(s):
         best=best.parent
 
     ##print("Pvalue maximo encontrado en la rama:"+str(max_pvalue))
-
+    
     #if(aux.p1>aux.p2 and aux.left==None) or (aux.p1<=aux.p2 and aux.right==None):
     if aux.left==None or aux.right==None:
         ##print("Solicitando nuevo nodo al arbol")
