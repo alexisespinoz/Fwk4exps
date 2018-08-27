@@ -334,6 +334,7 @@ def update(s):
     root.printTree()
 
 def recalculateMetric(n, filas):
+    delta = 0
     id1 = mapa(n.alg1)#.id
     id2 = mapa(n.alg2)#.id
     data1=[]
@@ -342,28 +343,23 @@ def recalculateMetric(n, filas):
         if(global_results[i][id1] != -1 and global_results[i][id2] != -1):
             data1.append(global_results[i][id1])
             data2.append(global_results[i][id2])
-
-    mean2=np.mean(data2)
-    mean1=np.mean(data1)
-    variance1=np.var(data1)
-    variance2=np.var(data2)
-    media=mean1-mean2
-    desviacion_tipica = np.sqrt((variance1/len(data1))+(variance2/len(data2)))
-
-    estadistico_t=(0-media)/desviacion_tipica
-    ##print "estadistico t:" + str(estadistico_t)
-    grados_de_libertad=len(data1)-2
-    #print "grados_de_libertad: " + str(grados_de_libertad)
-    p=1-t.cdf(estadistico_t,grados_de_libertad)
-
-    t_test=stats.ttest_ind(data1,data2)
-    n.pvalue=t_test[1]
+    dif = np.array(data1)-np.array(data2)
+    n_0 = len(dif)
+    N = len(n.ins_ord)
+    varianza = np.var(dif)
+    sd = np.sqrt(varianza/n_0)
+    mean_dif = np.mean(dif)
+    val = N*(delta - (n_0*mean_dif)/N)
+    factor = N - n_0
+    estadistico_t = (val - mean_dif)/(sd * factor)
+    grados_de_libertad = n_0-1
+    p = 1 - t.cdf(estadistico_t,grados_de_libertad)
+    #n.pvalue=t_test[1]
     n.p1=p
     n.p2=1-p
     #n.actualize_#print()
     n.save_p()
     n.save_jp()
-    n.save_pvalue()
 
 
 def clearScreen():
