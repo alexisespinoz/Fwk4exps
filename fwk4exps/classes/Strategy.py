@@ -20,9 +20,20 @@ class Strategy():
     def __eq__(self,other):
         return self.pathExe == other.pathExe and self.args == other.args and self.params == other.params and self.name == self.name 
 
-    def run(self, instance):
-        instance=self.repairInstancePath(instance)
+    def run(self, instance, PI):
+        #instance=self.repairInstancePath(instance)
+
+        aux=copy.copy(PI)
+        aux=aux.split('/')
+        aux.pop()
+        aux.pop(0)
+        PI=""
+        for e in aux:
+            PI=PI+"/"+e
+        PI=PI+"/"
+        instance=PI+instance
         args = self.args
+        print args
         #print "args (before replace): "+args
         for k, v in self.params.items():
             #print "k: "+(k)
@@ -33,11 +44,11 @@ class Strategy():
         #args = args + " " + str(instance)
         #print self.pathExe+" "+args
         #result = subprocess.run([self.pathExe, args], stdout=subprocess.PIPE)
-        pathNoExe = self.pathNoExe()
+        #pathNoExe = self.pathNoExe()
 
         #print pathNoExe + instance
-        commando = self.pathExe + " " + pathNoExe+instance.rstrip('\n') + " " + args
-        #print commando
+        commando = self.pathExe + " " + instance.replace('\r\n', '') + " " + args
+        print commando
         output= commands.getoutput(commando)
         output = output.splitlines()
         print "resultado: " + output[-1]

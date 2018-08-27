@@ -9,7 +9,6 @@ from classes.Strategy import Strategy
 #from classes.Strategy import Metric
 from scipy import stats
 from scipy.stats import norm,t
-from prettytable import PrettyTable
 import numpy as np
 import copy
 import time
@@ -254,7 +253,7 @@ def reshape(id1,id2):
         print dimensiones   
 
 def runNode(n):
-    global instancias
+    global instancias, pifile
     print "______________________"
     print("corriendo algoritmos en nodo"+str(n.id))
     ###_____________Agregar columnas si el numero de algoritmos e mayor que el numero de columnas actual de la matriz de resultados globales
@@ -269,8 +268,8 @@ def runNode(n):
         i = n.selectInstance()
         instancia = instancias[i]
         ##print("selected Instance: "+str(i))
-        resultado_a1= n.executeAlgorithm1(instancia)#resultados_experimentos[i][id1]
-        resultado_a2= n.executeAlgorithm2(instancia)#resultados_experimentos[i][id2]
+        resultado_a1= n.executeAlgorithm1(instancia,pifile)#resultados_experimentos[i][id1]
+        resultado_a2= n.executeAlgorithm2(instancia,pifile)#resultados_experimentos[i][id2]
         global_results[i][id1]=resultado_a1
         global_results[i][id2]=resultado_a2
         ##print("Resultado algoritmo "+str(id1)+" :"+str(resultado_a1))
@@ -290,8 +289,8 @@ def runNode(n):
             #print("selected Instance: "+str(i))
             i = n.selectInstance()
             instancia = instancias[i]
-            resultado_a1=n.executeAlgorithm1(instancia)#resultados_experimentos[i][id1]
-            resultado_a2=n.executeAlgorithm2(instancia)#resultados_experimentos[i][id2]
+            resultado_a1=n.executeAlgorithm1(instancia,pifile)#resultados_experimentos[i][id1]
+            resultado_a2=n.executeAlgorithm2(instancia,pifile)#resultados_experimentos[i][id2]
             global_results[i][id1]=resultado_a1
             global_results[i][id2]=resultado_a2
             #print("Resultado algoritmo "+str(id1)+" :"+str(resultado_a1))

@@ -186,12 +186,12 @@ class Tree(object):
     def get_p_vs_run(self):
         return (self.p1_vs_run,self.p2_vs_run)
 
-    def executeAlgorithm1(self, instance):
-        return self.alg1.run(instance)
+    def executeAlgorithm1(self, instance, PI):
+        return self.alg1.run(instance, PI)
 
     
-    def executeAlgorithm2(self, instance):
-        return self.alg2.run(instance)
+    def executeAlgorithm2(self, instance, PI):
+        return self.alg2.run(instance, PI)
 
     def selectInstance(self): #mejorar para el caso de que se haya ejecutado uno y el otro no
     #print("seleccionando instancia")
