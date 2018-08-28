@@ -20,16 +20,16 @@ def experimentalDesign():
     #pi = '/home/iaraya/clp/instances.txt'
     pi = range(500,800)
          
-    Sbest=bestParam(S0, "__a", [1.0,2.0,3.0,4.0], pi, 0.00)
+    Sbest=bestParam(S0, "__a", [1.0,2.0,3.0,4.0], pi, 0.04)
     print "El mejor valor de a es: " + str(Sbest.params["__a"])
    
-    Sbest=bestParam(Sbest, "__b", [1.0,2.0,3.0,4.0], pi, 0.00)
+    Sbest=bestParam(Sbest, "__b", [1.0,2.0,3.0,4.0], pi, 0.04)
     print "El mejor valor de b es: " + str(Sbest.params["__b"])
     
-    Sbest=bestParam(Sbest, "__g", [0.1,0.2,0.3,0.4], pi, 0.00)
+    Sbest=bestParam(Sbest, "__g", [0.1,0.2,0.3,0.4], pi, 0.04)
     print "El mejor valor de g es: " + str(Sbest.params["__g"])   
  
-    Sbest=bestParam(Sbest, "__p", [0.01,0.02,0.03,0.04], pi, 0.00)
+    Sbest=bestParam(Sbest, "__p", [0.01,0.02,0.03,0.04], pi, 0.04)
     print "El mejor valor de p es: " + str(Sbest.params["__p"])
     
     ##print("______________________")
