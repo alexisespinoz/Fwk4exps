@@ -33,7 +33,7 @@ class Strategy():
         PI=PI+"/"
         instance=PI+instance
         args = self.args
-        print args
+        #print args
         #print "args (before replace): "+args
         for k, v in self.params.items():
             #print "k: "+(k)
@@ -46,16 +46,17 @@ class Strategy():
         #result = subprocess.run([self.pathExe, args], stdout=subprocess.PIPE)
         #pathNoExe = self.pathNoExe()
 
-        #print pathNoExe + instance
-        commando = self.pathExe + " " + instance.replace('\r\n', '') + " " + args
-        print commando
+
+        #commando = self.pathExe + " " + instance.replace('\r\n', '') + " " + args
+        commando = self.pathExe + " " + instance.rstrip() + " " + args
+        #print commando
         output= commands.getoutput(commando)
         output = output.splitlines()
         print "resultado: " + output[-1]
         return float(output[-1])
 
 
-
+'''
     def pathNoExe(self):
 
         aux = copy.copy(self.pathExe)
@@ -82,3 +83,4 @@ class Strategy():
             absolutePath = absolutePath + "/" + e
         
         return absolutePath 
+'''

@@ -31,7 +31,7 @@ def suppress_stdout():
 
 pi = None
 resultados_experimentos=None
-selected_vs_run = []
+#selected_vs_run = []
 __count = None
 __msg = None
 __speculativeNode = None
@@ -41,6 +41,7 @@ experimentalDesign = None
 instance_order = None
 instancias = None
 global_results =None
+quality_vs_iteration = []
 
 s2id = {}
 s_id =0
@@ -56,7 +57,7 @@ class SpeculativeMonitor(object):
 
 def bestStrategy(S1, S2, range, delta_sig):
     ##print("______________________")
-    print("entra en bestStrategy")
+    #print("entra en bestStrategy")
     #if self.pi is None:
     #   self.pi = pi 
 
@@ -109,7 +110,7 @@ def speculativeExecute():
         #print root.alg1.pathExe
         s.add(root)
     runNode(root)
-    update(s)
+    update()
     i=0
     with KeyPoller() as keyPoller:
         while (len(s)>0):
@@ -128,91 +129,115 @@ def speculativeExecute():
             if pressed:
                 n = best(s)
                 if n==None:
-                    ##print("se cumple criterio de salida")
+                    print("se cumple criterio de salida")
                     break
                 s.add(n)
                 runNode(n)
-                update(s)
+                update()
                 i=i+1
                 print("iteracion: "+str(i))
+                saveConditionalProbability(s)
                 #root.printTree()
             else:
                 #with suppress_stdout():
                 n = best(s)
                 if n==None:
-                    ##print("se cumple criterio de salida")
+                    print("se cumple criterio de salida")
                     break
                 s.add(n)
                 runNode(n)
-                update(s)
+                update()
                 i=i+1
                 print("iteracion: "+str(i))
+                saveConditionalProbability(s)
                 root.printTree()
 
         ##print("-------------------------------------------------------------")
 
+def condicionDeTermino():
+    return False
+
 def best(s):
     print("_____________________________________________")
     print("selecting best node to run")
-    print("_____________________________________________")
-    ##print("-> Largo de s(coleccion de nodos del arbol):"+str(len(s)))
+    print("________________________________________________________")
     ####Parte1###
-    # Selecciona el nodo no visitado u hoja con max probabilidad conjunta
-    best=None
-    max_pc=-1
-    ##print("buscando rama con mayor probabilidad conjunta")
-    for nod in s:
-        if ((nod.isLeaf())and nod.jointProbability()>max_pc ):
-            best=nod
-            max_pc=nod.jointProbability()
-    # porqueeeeee este if?
-    if best==None:
-        ##print("no se encontro nodo hoja?")
-        return None
+    global root
+    aux = root
+    best = None
+    pj = 2
+    print "acaaaaaa"
+    while not aux.isLeaf(): 
 
-    max_pvalue=99999999999999#best.lastInstanceIndex#pvalue
+        if aux.conditionalProb() < pj:
+            best = aux
+            pj = aux.conditionalProb()
 
-    aux=best
-    best2=best
-    ##print("buscando nodo de la rama con mayor pvalue")# con menos ejecuciones
-    while best!=None:
-        val=best.lastInstanceIndex#randint(0,9)# best.parent.pvalue
-        #print "val:" + str(val)
-        #input()
-        #if val == -1:
-        #    val=0
-        if val <= max_pvalue:# and best.parent.pvalue!=0:
-            max_pvalue = val
-            best2= best#.parent
-        best=best.parent
-
-    ##print("Pvalue maximo encontrado en la rama:"+str(max_pvalue))
-    
-    #if(aux.p1>aux.p2 and aux.left==None) or (aux.p1<=aux.p2 and aux.right==None):
-    if aux.left==None or aux.right==None:
-        ##print("Solicitando nuevo nodo al arbol")
-        nod=retrieveNode(aux)
-        if nod:
-            ##print("nodo recibido")
-            ##print nod.alg1.name + " " +nod.alg2.name
-            if aux.p1>aux.p2:
-                aux.addLeft(nod)
-                ##print("id nodo agregado: ",aux.left.id)
-                return nod
+        #si hay hijo izquierdo
+        if aux.left:
+            #si hay ambos hijos
+            if aux.right:
+                if aux.left.simulationVisitCount > aux.right.simulationVisitCount: #conditionalProb()>aux.right.conditionalProb():
+                    aux = aux.left
+                else:
+                    aux = aux.right
+                if aux.conditionalProb() < pj:
+                    best = aux
+                    pj = aux.conditionalProb()                    
+            #si hay solo hijo izquierdo
             else:
-                aux.addRight(nod)
-                ##print("id nodo agregado y seleccionado: ",aux.right.id)
-                return nod
-    ##print("-------------------------------------------------------------")
+                aux = aux.left
+                if aux.conditionalProb() < pj:
+                    best = aux
+                    pj = aux.conditionalProb()
+        else:
+        #si hay solo hijo derecho
+            if aux.right:
+                aux = aux.right
+                if aux.conditionalProb() < pj:
+                    best = aux
+                    pj = aux.conditionalProb()
+        #si no hay ninguno
+        #else:
+        #    break
+    '''         
+            if aux.p1 > aux.p2:
+                if aux.left is None:
+                    break
+                else:
+                    aux = aux.left
+                    if aux.conditionalProb() < pj:
+                        best = aux
+                        pj = aux.conditionalProb()
+            else:
+                if aux.right is None:
+                    break
+                else:
+                    aux = aux.right
+                    if aux.conditionalProb() < pj:
+                        best = aux
+                        pj = aux.conditionalProb()
+    '''  
 
-    if best2.pvalue==0:
-        ##print("Se corrieron todas las instancias del nodo seleccionado")
+    nod = retrieveNode(aux)
+
+    if nod:
+
+        if aux.left == None and aux.p1 > aux.p2:
+            aux.addLeft(nod)
+            return nod
+
+        if aux.right == None and aux.p2 > aux.p1:
+            aux.addRight(nod)
+            return nod
+    
+    if best.isTerminated():
+        print("Se corrieron todas las instancias del nodo seleccionado")
         return None
     else:
-        ##print("")
-        selected_vs_run.append(best2.id)
-        ##print("nodo seleccionado : ",best2.id)
-        return best2
+
+        print("nodo seleccionado : ",best.id)
+        return best   
 
 def mapa(alg):
     global s2id, s_id
@@ -234,8 +259,7 @@ def reshape(id1,id2):
     global global_results
     
     dimensiones=np.shape(global_results)
-    print "dimensiones antes"
-    print dimensiones
+
     num_alg = dimensiones[1] #numero de algoritmos
     num_ins = dimensiones[0] #numero instancias
     if (id1 >= num_alg or id2 >= num_alg):
@@ -249,15 +273,13 @@ def reshape(id1,id2):
                 new_column = np.ones((num_ins,1))*-1
                 global_results = np.hstack((global_results,new_column))
                 num_alg =num_alg+1
-        print "dimensiones despues"
         print dimensiones   
 
 def runNode(n):
     global instancias, pifile
     print "______________________"
     print("corriendo algoritmos en nodo"+str(n.id))
-    ###_____________Agregar columnas si el numero de algoritmos e mayor que el numero de columnas actual de la matriz de resultados globales
-    
+    ###_Agregar columnas si el numero de algoritmos e mayor que el numero de columnas actual de la matriz de resultados globales
     
     #time.sleep(0.01)
     if n.visited:
@@ -268,13 +290,17 @@ def runNode(n):
         i = n.selectInstance()
         instancia = instancias[i]
         ##print("selected Instance: "+str(i))
-        resultado_a1= n.executeAlgorithm1(instancia,pifile)#resultados_experimentos[i][id1]
-        resultado_a2= n.executeAlgorithm2(instancia,pifile)#resultados_experimentos[i][id2]
-        global_results[i][id1]=resultado_a1
-        global_results[i][id2]=resultado_a2
+        if global_results[i][id1] == -1:
+            resultado_a1 = n.executeAlgorithm1(instancia,pifile)#resultados_experimentos[i][id1]
+            global_results[i][id1] = resultado_a1
+
+        if global_results[i][id2] == -1:
+            resultado_a2 = n.executeAlgorithm2(instancia,pifile)#resultados_experimentos[i][id2]
+            global_results[i][id2] = resultado_a2
+
         ##print("Resultado algoritmo "+str(id1)+" :"+str(resultado_a1))
         ##print("Resultado algoritmo "+str(id2)+" :"+str(resultado_a2))
-        diferencia=resultado_a1-resultado_a2
+        #diferencia=resultado_a1-resultado_a2
         ##print("Diferencia:"+str(diferencia))
 
         #n.save_jp()
@@ -289,18 +315,21 @@ def runNode(n):
             #print("selected Instance: "+str(i))
             i = n.selectInstance()
             instancia = instancias[i]
-            resultado_a1=n.executeAlgorithm1(instancia,pifile)#resultados_experimentos[i][id1]
-            resultado_a2=n.executeAlgorithm2(instancia,pifile)#resultados_experimentos[i][id2]
-            global_results[i][id1]=resultado_a1
-            global_results[i][id2]=resultado_a2
+            if global_results[i][id1] == -1:
+                resultado_a1 = n.executeAlgorithm1(instancia,pifile)#resultados_experimentos[i][id1]
+                global_results[i][id1] = resultado_a1
+
+            if global_results[i][id2] == -1:
+                resultado_a2 = n.executeAlgorithm2(instancia,pifile)#resultados_experimentos[i][id2]
+                global_results[i][id2] = resultado_a2
             #print("Resultado algoritmo "+str(id1)+" :"+str(resultado_a1))
             #print("Resultado algoritmo "+str(id2)+" :"+str(resultado_a2))
-            diferencia=resultado_a1-resultado_a2
+            #diferencia=resultado_a1-resultado_a2
             #print("Diferencia:"+str(diferencia))
         n.visited=True
         #n.save_jp()
 
-    if n.lastInstanceIndex == 1599:#cambiar!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if n.isTerminated():#lastInstanceIndex == 1599:#cambiar!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         n.setMaxp()
         n.setPvalueZero()
     #print "______________________"
@@ -309,30 +338,76 @@ def runNode(n):
 
 def addChildrens(s,n):
     if n.visited==False:
-        print("agregando hijos")
+        #print("agregando hijos")
         if n.left!=None:
             s.add(n.left)
         if n.right!=None:
             s.add(n.right)
     n.visited=True
 
-
-
-def update(s):
+def update():
     global root
-    print("recalculando probabilidades del arbol")
-    dimensiones=np.shape(global_results)
-    filas=dimensiones[0]
+    #print("recalculando probabilidades del arbol")
+    #dimensiones=np.shape(global_results)
+    #filas=dimensiones[0]
     #columnas=dimensiones[1]
+    '''
     for n in s:
         if n.p1==1 or n.p2==1:
             continue
         recalculateMetric(n, filas)
 
     clearScreen()
-    root.printTree()
+    '''
+    root.refreshSimulations()
+    for x in xrange(1,2001):
+        simulation(root)
+        #root.printTree()
 
-def recalculateMetric(n, filas):
+def simulation(nod):
+    global global_results
+    n = nod
+    sumDict = {}
+    while n is not None:   
+        n.addSimulationVisit()
+        total = len(n.ins_ord)
+        current = n.lastInstanceIndex
+        c = total - current
+        delta = 0.01
+        #print c
+        #obtener resultados parciales
+        id1 = mapa(n.alg1)#.id
+        id2 = mapa(n.alg2)#.id
+        data1=[]
+        data2=[]
+        filas , columnas = np.shape(global_results)
+        for i in range(0,filas):
+            if(global_results[i][id1] != -1 and global_results[i][id2] != -1):
+                data1.append(global_results[i][id1])
+                data2.append(global_results[i][id2]) 
+
+        #print data1
+        mean1 = np.mean(data1)
+        #print mean1
+        sd1 = np.std(data1)
+        #print sd1
+        parcial_sum1 = sum(data1)
+        complementsum1 = np.random.normal( c*mean1, c*c *sd1)
+
+        mean2 = np.mean(data2)
+        sd2 = np.std(data2)
+        parcial_sum2 = sum(data2)
+        complementsum2 = np.random.normal(c * mean2, c * c * sd2)
+        
+        if ( (parcial_sum1 + complementsum1 )/total*1.0 + delta> (parcial_sum2 +complementsum2)/total*1.0 ):
+            n.p1 = (parcial_sum1 + complementsum1 + delta)/total
+            n.p2 = (parcial_sum2 +complementsum2 )/total
+            n = n.left
+        else:
+            n.p2 = (parcial_sum1 + complementsum1 + delta)/total
+            n.p1 = (parcial_sum2 +complementsum2)/total 
+            n = n.right    
+    '''
     delta = 0
     id1 = mapa(n.alg1)#.id
     id2 = mapa(n.alg2)#.id
@@ -359,7 +434,7 @@ def recalculateMetric(n, filas):
     #n.actualize_#print()
     n.save_p()
     n.save_jp()
-
+    '''
 
 def clearScreen():
     for i in range(1,25):
@@ -369,6 +444,7 @@ def readData(path):
     #f=[]
     #f=np.genfromtxt(results)
     #return f
+    '''
     aux = copy.copy(path)
     aux = aux.split("/")
     aux.pop()
@@ -379,12 +455,14 @@ def readData(path):
     absolutePath = absolutePath + "/"
     print path
     print absolutePath
+    '''
     with open(path) as f:
         content = f.readlines()
 
     return content
 
 def instanceOrderGenerator(range):
+    np.random.seed(13)
     instance_order=np.random.permutation(len(range))+range[0]
     return instance_order
 
@@ -393,6 +471,15 @@ def createGlobalResults():
     global instancias
     length = len(instancias)
     global_results = np.ones(shape =(length,2))*-1
+
+def saveConditionalProbability(s):
+    global quality_vs_iteration
+    maxCP = 0
+    for n in s:
+        if n.isLeaf():
+            if n.conditionalProb() > maxCP:
+                maxCP = n.conditionalProb()
+    quality_vs_iteration.append(maxCP) 
 
 def run():
 
@@ -404,7 +491,6 @@ def run():
     #print pifile
     #print pi[-1]
     createGlobalResults()
-    np.random.seed(13)
     #instance_order=np.random.permutation(len(pi))
 
 
@@ -422,10 +508,10 @@ def run():
     ########### Ejecucion ################
     #Plotter= Plotter()
     speculativeExecute()
-
+    plotQuality()
     ########### Vectores para hacer plots ####################
     #maxpc_vs_iter=[]
-
+    '''
     if root.right:
         plt.figure()
         a , b =root.right.get_p_vs_run()
@@ -452,4 +538,14 @@ def run():
     plt.plot(root.get_pvalue_vs_run())
     plt.title("pvalue vs run root")
     plt.show()
+    '''
 
+def plotQuality():
+    global quality_vs_iteration
+
+    plt.figure()
+    plt.xlabel('iteration')
+    plt.ylabel('max conditional Probability')
+    plt.plot(quality_vs_iteration)
+    plt.title("quality of results over iterations")
+    plt.show()
