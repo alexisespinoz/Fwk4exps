@@ -12,7 +12,7 @@ class Strategy():
         self.params=params
         #self.id = id
         self.name = name
-
+        
     def __hash__(self):
         params = tuple(self.params.values())
         return hash((self.pathExe,self.args,self.name)+params)

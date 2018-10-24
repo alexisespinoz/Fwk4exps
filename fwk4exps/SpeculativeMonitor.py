@@ -42,6 +42,7 @@ instance_order = None
 instancias = None
 global_results =None
 quality_vs_iteration = []
+__totalSimulations = 2000
 
 s2id = {}
 s_id =0
@@ -127,7 +128,7 @@ def speculativeExecute():
                     pressed=True
 
             if pressed:
-                n = best(s)
+                n = select(s)
                 if n==None:
                     print("se cumple criterio de salida")
                     break
@@ -136,11 +137,11 @@ def speculativeExecute():
                 update()
                 i=i+1
                 print("iteracion: "+str(i))
-                saveConditionalProbability(s)
+                saveConditionalProbability(root,s)
                 #root.printTree()
             else:
                 #with suppress_stdout():
-                n = best(s)
+                n = select(s)
                 if n==None:
                     print("se cumple criterio de salida")
                     break
@@ -149,15 +150,12 @@ def speculativeExecute():
                 update()
                 i=i+1
                 print("iteracion: "+str(i))
-                saveConditionalProbability(s)
+                saveConditionalProbability(root,s)
                 root.printTree()
 
         ##print("-------------------------------------------------------------")
 
-def condicionDeTermino():
-    return False
-
-def best(s):
+def select(s):
     print("_____________________________________________")
     print("selecting best node to run")
     print("________________________________________________________")
@@ -166,13 +164,23 @@ def best(s):
     aux = root
     best = None
     pj = 2
-    print "acaaaaaa"
-    while not aux.isLeaf(): 
+    while aux is not None:#not aux.isLeaf(): 
 
         if aux.conditionalProb() < pj:
             best = aux
             pj = aux.conditionalProb()
 
+        if aux.p1 > aux.p2:
+            if aux.left is not None:
+                aux = aux.left
+            else:
+                break
+        else:
+            if aux.right is not None:
+                aux = aux.right
+            else:
+                break
+        '''
         #si hay hijo izquierdo
         if aux.left:
             #si hay ambos hijos
@@ -186,20 +194,31 @@ def best(s):
                     pj = aux.conditionalProb()                    
             #si hay solo hijo izquierdo
             else:
-                aux = aux.left
-                if aux.conditionalProb() < pj:
-                    best = aux
-                    pj = aux.conditionalProb()
+                if aux.left.simulationVisitCount > aux.simulationVisitCount - aux.left.simulationVisitCount:
+                    aux = aux.left
+                    if aux.conditionalProb() < pj:
+                        best = aux
+                        pj = aux.conditionalProb()
+                else:
+                    break
+                    #aux = aux.right
+
         else:
         #si hay solo hijo derecho
             if aux.right:
-                aux = aux.right
-                if aux.conditionalProb() < pj:
-                    best = aux
-                    pj = aux.conditionalProb()
+                if aux.right.simulationVisitCount >aux.simulationVisitCount - aux.left.simulationVisitCount:
+                    aux = aux.right
+                else:
+                    break
+                    #aux = aux.left
+                #    if aux.conditionalProb() < pj:
+                #        best = aux
+                #        pj = aux.conditionalProb()
         #si no hay ninguno
         #else:
         #    break
+    '''
+
     '''         
             if aux.p1 > aux.p2:
                 if aux.left is None:
@@ -218,7 +237,9 @@ def best(s):
                         best = aux
                         pj = aux.conditionalProb()
     '''  
-
+    ###############
+    #   expansion #
+    ###############
     nod = retrieveNode(aux)
 
     if nod:
@@ -230,7 +251,9 @@ def best(s):
         if aux.right == None and aux.p2 > aux.p1:
             aux.addRight(nod)
             return nod
-    
+    ###################
+    #   end expansion #
+    ###################   
     if best.isTerminated():
         print("Se corrieron todas las instancias del nodo seleccionado")
         return None
@@ -334,35 +357,13 @@ def runNode(n):
         n.setPvalueZero()
     #print "______________________"
 
-            #maxpc_vs_run[n.id][n.lastInstanceIndex]=n.jointProbability()
-
-def addChildrens(s,n):
-    if n.visited==False:
-        #print("agregando hijos")
-        if n.left!=None:
-            s.add(n.left)
-        if n.right!=None:
-            s.add(n.right)
-    n.visited=True
+            #maxpc_vs_run[n.id][n.lastInstanceIndex]=n.jointProbability()__
 
 def update():
-    global root
-    #print("recalculando probabilidades del arbol")
-    #dimensiones=np.shape(global_results)
-    #filas=dimensiones[0]
-    #columnas=dimensiones[1]
-    '''
-    for n in s:
-        if n.p1==1 or n.p2==1:
-            continue
-        recalculateMetric(n, filas)
-
-    clearScreen()
-    '''
+    global root,__totalSimulations
     root.refreshSimulations()
-    for x in xrange(1,2001):
+    for x in xrange(1,__totalSimulations + 1):
         simulation(root)
-        #root.printTree()
 
 def simulation(nod):
     global global_results
@@ -373,7 +374,7 @@ def simulation(nod):
         total = len(n.ins_ord)
         current = n.lastInstanceIndex
         c = total - current
-        delta = 0.01
+        delta = 0#.01
         #print c
         #obtener resultados parciales
         id1 = mapa(n.alg1)#.id
@@ -388,24 +389,26 @@ def simulation(nod):
 
         #print data1
         mean1 = np.mean(data1)
+        n.savemean1(mean1)
         #print mean1
         sd1 = np.std(data1)
         #print sd1
         parcial_sum1 = sum(data1)
-        complementsum1 = np.random.normal( c*mean1, c*c *sd1)
+        complementsum1 = np.random.normal( c*mean1, np.sqrt(c)*sd1)
 
         mean2 = np.mean(data2)
+        n.savemean2(mean2)
         sd2 = np.std(data2)
         parcial_sum2 = sum(data2)
-        complementsum2 = np.random.normal(c * mean2, c * c * sd2)
+        complementsum2 = np.random.normal(c * mean2, np.sqrt(c)* sd2)
         
         if ( (parcial_sum1 + complementsum1 )/total*1.0 + delta> (parcial_sum2 +complementsum2)/total*1.0 ):
-            n.p1 = (parcial_sum1 + complementsum1 + delta)/total
-            n.p2 = (parcial_sum2 +complementsum2 )/total
+            n.p1 = n.p1+1#(parcial_sum1 + complementsum1 + delta)/total
+            #n.p2 = #(parcial_sum2 +complementsum2 )/total
             n = n.left
         else:
-            n.p2 = (parcial_sum1 + complementsum1 + delta)/total
-            n.p1 = (parcial_sum2 +complementsum2)/total 
+            n.p2 = n.p2+1#(parcial_sum1 + complementsum1 + delta)/total
+            #n.p1 = #(parcial_sum2 +complementsum2)/total 
             n = n.right    
     '''
     delta = 0
@@ -435,10 +438,6 @@ def simulation(nod):
     n.save_p()
     n.save_jp()
     '''
-
-def clearScreen():
-    for i in range(1,25):
-        print "."
 
 def readData(path):
     #f=[]
@@ -472,13 +471,60 @@ def createGlobalResults():
     length = len(instancias)
     global_results = np.ones(shape =(length,2))*-1
 
-def saveConditionalProbability(s):
-    global quality_vs_iteration
+def saveConditionalProbability(root,s):
+    global quality_vs_iteration, __totalSimulations
     maxCP = 0
+    #leafs = 
+    ###############################
+    # encontrar algoritmo ganador #
+    ###############################
+    aux = root
+    bestAlgId = None
+    sumSimulations = 0
+    while aux != None:
+        if aux.p1 > aux.p2:
+            if aux.left is not None:
+                aux = aux.left
+            else:
+                break
+        else:
+            if aux.right is not None:
+                aux = aux.right
+            else:
+                break
+
+    if aux.p1 > aux.p2:
+        bestAlgId = aux.alg1.name
+    else:
+        bestAlgId = aux.alg2.name
+
+    print "mejor algoritmo: " + bestAlgId
+    ###################################
+    # fin encontrar algoritmo ganador #
+    ###################################
+
+    ###################################
+    # recorrer nodos hojas            #
+    ###################################
     for n in s:
         if n.isLeaf():
-            if n.conditionalProb() > maxCP:
-                maxCP = n.conditionalProb()
+            if n.alg1.name == bestAlgId: #and n.p1 >= n.p2:
+                print "entraaaaa_A"
+                sumSimulations = sumSimulations + n.p1
+
+            if n.alg2.name == bestAlgId: #and n.p2 >= n.p1:
+                print "entraaaaa_B"
+                sumSimulations = sumSimulations + n.p2    
+    ###################################
+    # fin recorrer nodos hojas        #
+    ###################################
+    print "sumSimulations:"
+    print sumSimulations 
+
+    maxCP = sumSimulations / (__totalSimulations*1.0)
+
+    print "maxCP:"
+    print maxCP
     quality_vs_iteration.append(maxCP) 
 
 def run():

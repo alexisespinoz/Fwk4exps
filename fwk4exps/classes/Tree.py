@@ -15,8 +15,8 @@ class Tree(object):
         self.right = None
         self.pvalue = 0.5
         self.printable=None
-        self.p1=0.5
-        self.p2=0.5
+        self.p1=0
+        self.p2=0
         self.alg1=alg1
         self.alg2=alg2
         self.lastInstanceIndex = -1
@@ -25,13 +25,10 @@ class Tree(object):
         #self.times_ran=0
         self.parent = parent
         self.visited = False
-        self.jp_vs_run = []              #joint probability
-        self.jp_vs_run2 = []              #joint probability
-        self.p1_vs_run = []
-        self.p2_vs_run = []
-        self.p_vs_run = []
-        self.array_pvalue=[]
-        self.stat_vs_run = []
+        self.m1 =0.5
+        self.m2 =0.5
+
+    
     def setMaxp(self):
         if self.p1>self.p2:
             self.p1=1
@@ -68,8 +65,8 @@ class Tree(object):
         child.printable=Node(child.getData(),parent=self.printable)
         #print "added right child node"+str(child.id)+" to node"+str(self.id)
 
-    def refresh(self):
-        self.simulationVisitCount = 0
+    #def refresh(self):
+    #    self.simulationVisitCount = 0
 
     def addSimulationVisit(self):
         self.simulationVisitCount = self.simulationVisitCount + 1
@@ -80,10 +77,12 @@ class Tree(object):
         p2 = str(Decimal(self.p2).quantize(Decimal('1.000')))
         sim = str(self.simulationVisitCount)
         cond = str(self.conditionalProb())
+        m1 = str(self.m1)
+        m2 = str(self.m2)
         #jp1 = str(Decimal(self.jointProbability()).quantize(Decimal('1.000')))
         #jp2 = str(Decimal(self.jointProbability2()).quantize(Decimal('1.000')))
         #return str(self.id)+"__"+self.alg1.name+"("+str(self.p1)+") vs "+self.alg2.name+"("+str(self.p2)+")"
-        return str(self.id)+"__"+self.alg1.name+"("+p1+") vs "+self.alg2.name+"("+p2+")"+"|simulations: "+sim+"| |conditionalProb = "+ cond +"|"#+"|("+jp1+")_("+jp2+")"
+        return str(self.id)+"__"+self.alg1.name+"("+p1+","+m1+") vs "+self.alg2.name+"("+p2+","+m2+")"+"|simulations: "+sim+"| |conditionalProb = "+ cond +"| instancias corridas:"+str(self.lastInstanceIndex)#+"|("+jp1+")_("+jp2+")"
         #return str(self.id)+"__"+self.alg1.name+" vs "+self.alg2.name+"|simulations: "+sim#+"|("+jp1+")_("+jp2+")"
 
     def printPreorder(self):
@@ -103,6 +102,8 @@ class Tree(object):
     def refreshSimulations(self):
         if self!=None:
             self.simulationVisitCount = 0
+            self.p1 = 0
+            self.p2 = 0
             # Then recur on left child
             if self.left!=None:
                 self.left.refreshSimulations()
@@ -125,6 +126,7 @@ class Tree(object):
         #print("______________________")
 
     def conditionalProb(self):
+        '''
         if self.parent is None:
             return 1
         else:
@@ -133,41 +135,10 @@ class Tree(object):
             #print "self.simulationVisitCount: " + str(self.simulationVisitCount)
             #print "self.parent.simulationVisitCount: " + str(self.parent.simulationVisitCount)
             return self.simulationVisitCount / (self.parent.simulationVisitCount * 1.0)
-
-    def jointProbability(self):
-        if self.parent==None:
-            return self.bestp1p2()
-        node=self
-        jp=1
-        if node.p1>node.p2:
-            jp=node.p1
-        else:
-            jp=node.p2
-        while (node.parent!=None):
-            if node.parent.left==node:
-                 jp=jp*node.parent.p1
-            if node.parent.right==node:
-                 jp=jp*node.parent.p2
-            node=node.parent
-        return jp
-
-    def jointProbability2(self):
-        if self.parent==None:
-            return self.worstp1p2()
-        node=self
-        jp=1
-        if node.p1<node.p2:
-            jp=node.p1
-        else:
-            jp=node.p2
-        while (node.parent!=None):
-            if node.parent.left==node:
-                 jp=jp*node.parent.p1
-            if node.parent.right==node:
-                 jp=jp*node.parent.p2
-            node=node.parent
-        return jp
-
+        '''
+        if self.simulationVisitCount ==0:
+            return 0
+        return self.bestp1p2() / (self.simulationVisitCount *1.0)
     def isLeaf(self):
         return self.left==None and self.right==None
 
@@ -204,32 +175,6 @@ class Tree(object):
 
         return msg
 
-    def save_jp(self):
-        (self.jp_vs_run).append(self.jointProbability())
-        (self.jp_vs_run2).append(self.jointProbability2())
-
-    def save_p(self):
-        (self.p1_vs_run).append(self.p1)
-        (self.p2_vs_run).append(self.p2)
-
-    def save_pvalue(self):
-        self.array_pvalue.append(self.pvalue)
-
-    def get_pvalue_vs_run(self):
-        return self.array_pvalue
-
-    def save_test(self,test,probability):
-        self.stat_vs_run.append(tuple((test,probability)))
-
-    def get_jp_vs_run(self):
-        return self.jp_vs_run
-
-    def get_jp_vs_run2(self):
-        return self.jp_vs_run2
-
-    def get_p_vs_run(self):
-        return (self.p1_vs_run,self.p2_vs_run)
-
     def executeAlgorithm1(self, instance, PI):
         return self.alg1.run(instance, PI)
 
@@ -246,3 +191,9 @@ class Tree(object):
     
     def isTerminated(self):
         return self.lastInstanceIndex == len(self.ins_ord)-1
+
+    def savemean1(self,m1):
+        self.m1=m1
+
+    def savemean2(self,m2):
+        self.m2=m2
