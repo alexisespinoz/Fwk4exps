@@ -1,9 +1,10 @@
 from anytree import Node, RenderTree
 from decimal import *
 #encoding=utf8
-import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
+
+#import sys
+#reload(sys)
+#sys.setdefaultencoding('utf8')
 
 
 id=0
@@ -13,8 +14,8 @@ class Tree(object):
         self.id=_id
         self.left = None
         self.right = None
-        self.pvalue = 0.5
-        self.printable=None
+        self.pvalue = 0.5 #borrar
+        self.printable=None 
         self.p1=0
         self.p2=0
         self.alg1=alg1
@@ -27,6 +28,7 @@ class Tree(object):
         self.visited = False
         self.m1 =0.5
         self.m2 =0.5
+        self.isLeafLeaf = False
 
     
     def setMaxp(self):
@@ -144,7 +146,7 @@ class Tree(object):
 
     def isNotLeaf(self):
         return self.left == None or self.right == None
-
+ 
     def bestp1p2(self):
         if self.p1>self.p2:
             return self.p1
@@ -182,8 +184,7 @@ class Tree(object):
     def executeAlgorithm2(self, instance, PI):
         return self.alg2.run(instance, PI)
 
-    def selectInstance(self): #mejorar para el caso de que se haya ejecutado uno y el otro no
-        #print("seleccionando instancia")
+    def selectInstance(self): 
         self.lastInstanceIndex=self.lastInstanceIndex + 1
         index=self.lastInstanceIndex
         i=self.ins_ord[index]
