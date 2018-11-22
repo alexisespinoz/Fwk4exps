@@ -301,7 +301,7 @@ def update(s):
 
         if hash(n.alg2) not in parametersAlgos:
 
-            parametersAlgos[hash(n.alg2)] = sampleParameters(getAlgResults(n.alg1))
+            parametersAlgos[hash(n.alg2)] = sampleParameters(getAlgResults(n.alg2))
 
 
     for x in range(1,__totalSimulations + 1):
@@ -327,7 +327,7 @@ def simulation(nod):
         parcial_sum1 = sum(data1)
         complementsum1 = np.random.normal( c*mean1, np.sqrt(c)*sd1)
 
-        mean2,sd2, data2 = getRandomParameters(parametersAlgo1)
+        mean2,sd2, data2 = getRandomParameters(parametersAlgo2)
         n.savemean2(mean2)
         parcial_sum2 = sum(data2)
         complementsum2 = np.random.normal(c * mean2, np.sqrt(c)* sd2)

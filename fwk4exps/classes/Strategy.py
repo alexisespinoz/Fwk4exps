@@ -35,7 +35,8 @@ class Strategy():
         for k, v in self.params.items():
             args = args.replace(k, str(v))
 
-        commando = self.pathExe + " " + instance.rstrip() + " " + args
+        commando = self.pathExe + " .." + instance.rstrip() + " " + args
+        #print (commando)
         output= subprocess.getoutput(commando)
         output = output.splitlines()
         print ("resultado: " + output[-1])
