@@ -253,6 +253,11 @@ def runNode(n):
         i = n.selectInstance()
         instancia = instancias[i]
         ##print("selected Instance: "+str(i))
+        
+        while global_results[i][id1]!=-1 and global_results[i][id2] != -1: 
+            i = n.selectInstance()
+            instancia = instancias[i]
+        
         if global_results[i][id1] == -1:
             resultado_a1 = n.executeAlgorithm1(instancia,pifile)#resultados_experimentos[i][id1]
             global_results[i][id1] = resultado_a1
@@ -305,7 +310,7 @@ def update(s):
 
 
     for x in range(1,__totalSimulations + 1):
-        print ("simulation "+str(x)+":")
+        #print ("simulation "+str(x)+":")
         simulation(root)
 
 def simulation(nod):
@@ -315,32 +320,39 @@ def simulation(nod):
     while n is not None:   
         n.addSimulationVisit()
         total = len(n.ins_ord)
-        current = n.lastInstanceIndex
-        c = total - current
-        delta = 0#.01
-
+     
         parametersAlgo1 = parametersAlgos[hash(n.alg1)]
         parametersAlgo2 = parametersAlgos[hash(n.alg2)]
         
         mean1, sd1, data1= getRandomParameters(parametersAlgo1)
-        n.savemean1(mean1)
-        parcial_sum1 = sum(data1)
-        complementsum1 = np.random.normal( c*mean1, np.sqrt(c)*sd1)
+        mean2,sd2, data2 = getRandomParameters(parametersAlgo2)   
+        current1 = len(data1)
+        current2 = len(data2)
+        c1 = total - current1
+        c2 = total - current2
+        delta = 0#.01
 
-        mean2,sd2, data2 = getRandomParameters(parametersAlgo2)
-        n.savemean2(mean2)
-        parcial_sum2 = sum(data2)
-        complementsum2 = np.random.normal(c * mean2, np.sqrt(c)* sd2)
+
         
+
+        n.savemean1(np.mean(data1))
+        parcial_sum1 = sum(data1)
+        complementsum1 = np.random.normal( c1*mean1, np.sqrt(c1)*sd1)
+
+        
+        n.savemean2(np.mean(data2))
+        parcial_sum2 = sum(data2)
+        complementsum2 = np.random.normal(c2 * mean2, np.sqrt(c2)* sd2)
+
         ############
         #print info#
         ############
-        print ("visitando nodo:")
+        #print ("visitando nodo:")
         n.getData()
 
-        print ("media estimada 1:" + str((parcial_sum1 + complementsum1 )/total*1.0))
+        #print ("media estimada 1:" + str((parcial_sum1 + complementsum1 )/total*1.0))
 
-        print ("media estimada 2:" + str((parcial_sum2 + complementsum2 )/total*1.0))
+        #print ("media estimada 2:" + str((parcial_sum2 + complementsum2 )/total*1.0))
 
         if ( (parcial_sum1 + complementsum1 )/total*1.0 + delta > (parcial_sum2 +complementsum2)/total*1.0 ):
             n.p1 = n.p1+1#(parcial_sum1 + complementsum1 + delta)/total
@@ -501,7 +513,7 @@ def sampleParameters(data):
         returns = pm.Normal('returns', mu=mu, sd=sigma, observed=data)
         
         step = pm.Metropolis()
-        trace = pm.sample(2000, step, cores=4)
+        trace = pm.sample(5000, step, cores=4)
         
         for t in trace:
           __medias.append(t["mu"])

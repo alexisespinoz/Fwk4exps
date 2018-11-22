@@ -25,20 +25,21 @@ def experimentalDesign():
     S0 = Strategy('Algo0', '../Metasolver/BSG_CLP', '--alpha=__a --beta=__b --gamma=__g -p __p -t 1 --min_fr=0.98', params)
 
     #pi = '/home/iaraya/clp/instances.txt'
-    pi = range(800,900)
+    pi = range(800,810)
          
-    Sbest=bestParam(S0, "__a", [1.0,4.0], pi, 0.00)
+    Sbest=bestParam(S0, "__a", [1.0, 4.0], pi, 0.00)
     print ("El mejor valor de a es: " + str(Sbest.params["__a"]))
     
-    Sbest=bestParam(Sbest, "__b", [1.0,4.0], pi, 0.00)
+    Sbest=bestParam(Sbest, "__b", [1.0, 4.0], pi, 0.00)
     print ("El mejor valor de b es: " + str(Sbest.params["__b"]))
-    '''
-    Sbest=bestParam(Sbest, "__g", [0.1,0.2,0.3,0.4], pi, 0.00)
-    print "El mejor valor de g es: " + str(Sbest.params["__g"])   
     
-    Sbest=bestParam(Sbest, "__p", [0.01,0.02,0.03,0.04], pi, 0.00)
-    print "El mejor valor de p es: " + str(Sbest.params["__p"])
-    ''' 
+    '''
+    Sbest=bestParam(Sbest, "__g", [0.1, 0.4], pi, 0.00)
+    print ("El mejor valor de g es: " + str(Sbest.params["__g"]) ) 
+    
+    Sbest=bestParam(Sbest, "__p", [0.01, 0.04], pi, 0.00)
+    print ("El mejor valor de p es: " + str(Sbest.params["__p"]))
+    '''
     ##print("______________________")
 PI='../Metasolver/extras/fw4exps/instancesBR.txt'
 
