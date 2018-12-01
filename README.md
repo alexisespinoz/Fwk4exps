@@ -1,9 +1,17 @@
 # Framework Diseño de Experimentos 
+Requerimientos python >= 3
 
 Descargar:
 
     git clone https://github.com/alexisespinoz/Fwk4exps.git
-    
+   
+Instalacion:
+    Windows:
+        En la carpeta raiz ejecutar el siguiente comando:
+        python -mpip install requirements.txt
+    Linux:
+        En la carpeta raiz ejecutar el siguiente comando:
+        pip install -r requirements.txt
 
 Editar archivo Fwk4exps/experimentalDesign.py
 
