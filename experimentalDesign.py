@@ -22,10 +22,10 @@ def bestParam(S0, param, values, pi, delta):
 def experimentalDesign():
    	
     params = {"__a" : 0.0, "__b" : 0.0, "__g" : 0.0, "__p" : 0.0}
-    S0 = Strategy('Algo0', '../Metasolver/BSG_CLP', '--alpha=__a --beta=__b --gamma=__g -p __p -t 1 --min_fr=0.98', params)
+    S0 = Strategy('Algo0', '../Metasolver/BSG_CLP', '--alpha=__a --beta=__b --gamma=__g -p __p -t 2 --min_fr=0.98', params)
 
     #pi = '/home/iaraya/clp/instances.txt'
-    pi = range(800,810)
+    pi = range(800,900)
          
     Sbest=bestParam(S0, "__a", [1.0, 4.0], pi, 0.00)
     print ("El mejor valor de a es: " + str(Sbest.params["__a"]))

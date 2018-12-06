@@ -22,4 +22,5 @@ with suppress_stdout():
     lalala()
     #print "You cannot see this"
 print "And you can see this again"
+Aquí estuvo Johann Valenzuela
 '''

@@ -10,7 +10,7 @@ from decimal import *
 id=0
 
 class Tree(object):
-    def __init__(self,alg1,alg2,parent,_id,ins_ord):
+    def __init__(self,alg1,alg2,parent,_id,ins_ord,rangebase):
         self.id=_id
         self.left = None
         self.right = None
@@ -20,9 +20,11 @@ class Tree(object):
         self.p2=0
         self.alg1=alg1
         self.alg2=alg2
-        self.lastInstanceIndex = -1
+        self.lastInstanceIndex1 = -1
+        self.lastInstanceIndex2 = -1
         self.ins_ord = ins_ord
         self.simulationVisitCount =0
+        self.rangebase = rangebase
         #self.times_ran=0
         self.parent = parent
         self.visited = False
@@ -84,7 +86,7 @@ class Tree(object):
         #jp1 = str(Decimal(self.jointProbability()).quantize(Decimal('1.000')))
         #jp2 = str(Decimal(self.jointProbability2()).quantize(Decimal('1.000')))
         #return str(self.id)+"__"+self.alg1.name+"("+str(self.p1)+") vs "+self.alg2.name+"("+str(self.p2)+")"
-        return str(self.id)+"__"+self.alg1.name+"("+p1+","+m1+") vs "+self.alg2.name+"("+p2+","+m2+")"+"|simulations: "+sim+"| |conditionalProb = "+ cond +"| instancias corridas:"+str(self.lastInstanceIndex)#+"|("+jp1+")_("+jp2+")"
+        return str(self.id)+"__"+self.alg1.name+"("+p1+","+m1+") vs "+self.alg2.name+"("+p2+","+m2+")"+"|simulations: "+sim+"| |conditionalProb = "+ cond +"| instancias corridas:alg1"+str(self.lastInstanceIndex1)+",alg2:"+str(self.lastInstanceIndex2)#+"|("+jp1+")_("+jp2+")"
         #return str(self.id)+"__"+self.alg1.name+" vs "+self.alg2.name+"|simulations: "+sim#+"|("+jp1+")_("+jp2+")"
 
     def printPreorder(self):
@@ -177,21 +179,45 @@ class Tree(object):
 
         return msg
 
-    def executeAlgorithm1(self, instance, PI):
-        return self.alg1.run(instance, PI)
+    def executeAlgorithm1(self, i,algid, instance, PI, return_dict):
+        return_dict[i,algid] = self.alg1.run(instance, PI)
 
     
-    def executeAlgorithm2(self, instance, PI):
-        return self.alg2.run(instance, PI)
-
+    def executeAlgorithm2(self, i,algid, instance, PI, return_dict):
+        return_dict[i,algid] = self.alg2.run(instance, PI)
+    '''
     def selectInstance(self): 
         self.lastInstanceIndex=self.lastInstanceIndex + 1
         index=self.lastInstanceIndex
         i=self.ins_ord[index]
         return i
+    '''
+    def selectInstance1(self): 
+        self.lastInstanceIndex1=self.lastInstanceIndex1 + 1
+        index=self.lastInstanceIndex1
+        i=self.ins_ord[index]
+        #print ("index"+str(index))
+        #print ("i:"+str(i))
+        #print ("largo de arreglo instancias"+str(len(self.ins_ord)))
+        if i<= len(self.ins_ord)+self.rangebase:
+            return i
+        else:
+            return None
+
+    def selectInstance2(self): 
+        self.lastInstanceIndex2=self.lastInstanceIndex2 + 1
+        index=self.lastInstanceIndex2
+        i=self.ins_ord[index]
+        #print ("index"+str(index))
+        #print ("i:"+str(i))
+        #print ("largo de arreglo instancias"+str(len(self.ins_ord)))
+        if i <= len(self.ins_ord)+self.rangebase:
+            return i
+        else:
+            return None
     
     def isTerminated(self):
-        return self.lastInstanceIndex == len(self.ins_ord)-1
+        return self.lastInstanceIndex1 == len(self.ins_ord)-1 and self.lastInstanceIndex2 == len(self.ins_ord)-1
 
     def savemean1(self,m1):
         self.m1=m1

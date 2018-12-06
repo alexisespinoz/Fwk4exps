@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt #graficos
 import matplotlib.animation as animation #graficos animados
 
 #from p#print import p#print
-#from classes import noprint
+from fwk4exps.classes import noprint
 from fwk4exps.classes.detectInput import KeyPoller
 #from classes.Plotter import Plotter
 #from classes.Algorithm import Algorithm
@@ -64,7 +64,12 @@ global_results =None
 quality_vs_iteration = []
 __totalSimulations = 1000
 iteration = 0
+
 ax1 = None
+ann_list = []
+
+__numOfExecutions=0
+
 
 s2id = {}
 s_id =0
@@ -79,7 +84,7 @@ class SpeculativeMonitor(object):
         global pifile
         pifile = PI
 
-def bestStrategy(S1, S2, range, delta_sig):
+def bestStrategy(S1, S2, __range, delta_sig):
     global __count, __speculativeNode, __msg
     if __count < len(__msg):
         if __msg[__count]==0:
@@ -88,8 +93,8 @@ def bestStrategy(S1, S2, range, delta_sig):
         else:
             __count=__count+1
             return S2
-    ins_ord = instanceOrderGenerator(range)
-    __speculativeNode=Tree(S1,S2,None,0,ins_ord)
+    ins_ord = instanceOrderGenerator(__range)
+    __speculativeNode=Tree(S1,S2,None,0,ins_ord,__range[0])
     raise ValueError
 
 def retrieveNode(aux):
@@ -119,6 +124,8 @@ def speculativeExecute():
         s.add(root)
     runNode(root)
     update(s)
+    root.printTree()
+
     #with KeyPoller() as keyPoller:
     while (len(s)>0):
         a = KeyPoller()
@@ -250,21 +257,7 @@ def runNode(n):
         id2 = mapa(n.alg2)#.id
         
         reshape(id1,id2)
-        i = n.selectInstance()
-        instancia = instancias[i]
-        ##print("selected Instance: "+str(i))
-        
-        while global_results[i][id1]!=-1 and global_results[i][id2] != -1: 
-            i = n.selectInstance()
-            instancia = instancias[i]
-        
-        if global_results[i][id1] == -1:
-            resultado_a1 = n.executeAlgorithm1(instancia,pifile)#resultados_experimentos[i][id1]
-            global_results[i][id1] = resultado_a1
-
-        if global_results[i][id2] == -1:
-            resultado_a2 = n.executeAlgorithm2(instancia,pifile)#resultados_experimentos[i][id2]
-            global_results[i][id2] = resultado_a2
+        runParallel(n)
 
     else:
         for j in range(1,4):
@@ -272,42 +265,19 @@ def runNode(n):
             id2 = mapa(n.alg2)#.id
             
             reshape(id1,id2)
-            #i = selectInstance(n)
-            #print("selected Instance: "+str(i))
-            i = n.selectInstance()
-            instancia = instancias[i]
-            if global_results[i][id1] == -1:
-                resultado_a1 = n.executeAlgorithm1(instancia,pifile)#resultados_experimentos[i][id1]
-                global_results[i][id1] = resultado_a1
-
-            if global_results[i][id2] == -1:
-                resultado_a2 = n.executeAlgorithm2(instancia,pifile)#resultados_experimentos[i][id2]
-                global_results[i][id2] = resultado_a2
+            runParallel(n)
 
         n.visited=True
-        #n.save_jp()
 
-    if n.isTerminated():#lastInstanceIndex == 1599:#cambiar!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    if n.isTerminated():
         n.setMaxp()
         n.setPvalueZero()
-    #print "______________________"
 
-            #maxpc_vs_run[n.id][n.lastInstanceIndex]=n.jointProbability()__
 
 def update(s):
-    global root,__totalSimulations,parametersAlgos
+    global root,__totalSimulations#,parametersAlgos
     root.refreshSimulations()
-
-    parametersAlgos.clear()
-    for n in s:
-        if hash(n.alg1) not in parametersAlgos:
-
-            parametersAlgos[hash(n.alg1)] = sampleParameters(getAlgResults(n.alg1))
-
-        if hash(n.alg2) not in parametersAlgos:
-
-            parametersAlgos[hash(n.alg2)] = sampleParameters(getAlgResults(n.alg2))
-
 
     for x in range(1,__totalSimulations + 1):
         #print ("simulation "+str(x)+":")
@@ -382,19 +352,20 @@ def createGlobalResults():
     global_results = np.ones(shape =(length,2))*-1
 
 def saveConditionalProbability(root,s):
-    print ("guardando probabilidad conjunta")
-    global iteration, __totalSimulations
+    global iteration, __totalSimulations, __numOfExecutions
 
     max_sim = -1
 
     #cambiar esta parte!!!
     for n in s:
         if n.isLeafLeaf:
-            print ("hay hoja hoja !!!! ")
+            #print ("hay hoja hoja !!!! ")
             if n.p1 > max_sim :
                 max_sim = n.p1
+                bestId = mapa(n.alg1)
             if n.p2 > max_sim :
                 max_sim = n.p2
+                bestId = mapa(n.alg2)
         '''
         if n.p1 > max_sim and n.isLeafLeaf:
             max_sim = n.p1
@@ -411,7 +382,7 @@ def saveConditionalProbability(root,s):
         # guadar calidad en archivo de animacion #
         ##########################################
         with open('fwk4exps/dataanimation.txt','a') as f:
-            f.write(str(iteration)+","+str(maxCP)+"\n")
+            f.write(str( __numOfExecutions )+","+str(maxCP)+","+str(bestId)+"\n")
 
 def run():
 
@@ -449,19 +420,30 @@ def run():
     #maxpc_vs_iter=[]
 
 def animate(i):
-    global ax1
+    global ax1,ann_list
+
+    for i, a in enumerate(ann_list):
+        a.remove()
+    ann_list[:] = []
+
     graph_data = open('fwk4exps/dataanimation.txt','r').read()
     lines = graph_data.split('\n')
     xs = []
     ys = []
+    zs = []
     for line in lines:
         if len(line) > 1:
-            x, y = line.split(',')
+            x, y, z = line.split(',')
             xs.append(float(x))
             ys.append(float(y))
+            zs.append(z)
 
     ax1.clear()
     ax1.plot(xs, ys)
+    for i, txt in enumerate(zs):
+        #print(i,txt)
+        ann=ax1.annotate(txt, (xs[i], ys[i]))
+        ann_list.append(ann)
 
 def livegraph():
     global ax1
@@ -476,7 +458,7 @@ def clearAnimationData():
 def marcarNodo():
     #print "marcando nodo como hoja hoja"
     global __msg,root
-    print (__msg)
+    #print (__msg)
     aux = root
     #cambiar, llegar hasta el penultimo o si no se vuelve nulo
     ##
@@ -501,6 +483,7 @@ def marcarNodo():
 def sampleParameters(data):
     #https://twiecki.github.io/blog/2015/11/10/mcmc-sampling/
     np.random.seed(123)
+
 
     #extracted means and sigmas from 
     __medias = []
@@ -539,3 +522,176 @@ def getRandomParameters(params):
     randomIndex =np.random.randint(largo)
     return medias[randomIndex], sigmas[randomIndex], algoResults
     
+def runParallel(node):
+    global instancias, pifile, parametersAlgos,__numOfExecutions
+
+    id1 = mapa(node.alg1)#.id
+    id2 = mapa(node.alg2)#.id 
+    
+    manager = multiprocessing.Manager()
+    return_dict = manager.dict()
+    jobs = []
+
+    #seleccionar instancia
+    numproc = multiprocessing.cpu_count()
+    diff = node.lastInstanceIndex1 - node.lastInstanceIndex2 
+    print("numero de procedadores:"+str(numproc))
+    print ("esta es la difererncia:"+str(diff))
+
+    if diff>0:
+        if diff>numproc:
+            for j in range(numproc):
+                i=node.selectInstance2()
+                if i==None:
+                    break
+                instancia = instancias[i]
+
+                while global_results[i][id1]!=-1 and global_results[i][id2] != -1: 
+                    i = node.selectInstance2()
+                    instancia = instancias[i]
+
+                p = multiprocessing.Process(target=node.executeAlgorithm2, args=(i,id2,instancia,pifile,return_dict))
+                jobs.append(p)
+                p.start()
+        else:
+            c = numproc - diff
+            for j in range(c//2):
+                i=node.selectInstance1()
+                if i==None:
+                    break
+                instancia = instancias[i]
+                
+                while global_results[i][id1]!=-1 and global_results[i][id2] != -1: 
+                    i = node.selectInstance1()
+                    instancia = instancias[i]
+
+                p = multiprocessing.Process(target=node.executeAlgorithm1, args=(i,id1,instancia,pifile,return_dict))
+                jobs.append(p)
+                p.start()
+
+            for j in range(c//2+diff):
+                i=node.selectInstance2()
+                if i==None:
+                    break
+                instancia = instancias[i]
+
+                while global_results[i][id1]!=-1 and global_results[i][id2] != -1: 
+                    i = node.selectInstance2()
+                    instancia = instancias[i]
+
+                p = multiprocessing.Process(target=node.executeAlgorithm2, args=(i,id2,instancia,pifile,return_dict))
+                jobs.append(p)
+                p.start()
+
+    elif(diff < 0):
+        diff = abs(diff)
+        if diff>numproc:
+            for j in range(numproc):
+                i=node.selectInstance1()
+                if i==None:
+                    break
+                instancia = instancias[i]
+
+                while global_results[i][id1]!=-1 and global_results[i][id2] != -1: 
+                    i = node.selectInstance1()
+                    instancia = instancias[i]
+
+                p = multiprocessing.Process(target=node.executeAlgorithm1, args=(i,id2,instancia,pifile,return_dict))
+                jobs.append(p)
+                p.start()
+        else:
+            c = numproc - diff
+            for j in range(c//2+diff):
+                i=node.selectInstance1()
+                if i==None:
+                    break
+                instancia = instancias[i]
+                
+                while global_results[i][id1]!=-1 and global_results[i][id2] != -1: 
+                    i = node.selectInstance1()
+                    instancia = instancias[i]
+
+                p = multiprocessing.Process(target=node.executeAlgorithm1, args=(i,id1,instancia,pifile,return_dict))
+                jobs.append(p)
+                p.start()
+
+            for j in range(c//2):
+                i=node.selectInstance2()
+                if i==None:
+                    break
+                instancia = instancias[i]
+
+                while global_results[i][id1]!=-1 and global_results[i][id2] != -1: 
+                    i = node.selectInstance2()
+                    instancia = instancias[i]
+
+                p = multiprocessing.Process(target=node.executeAlgorithm2, args=(i,id2,instancia,pifile,return_dict))
+                jobs.append(p)
+                p.start()
+    else:
+        print("hola entre")
+        for j in range(numproc//2):
+            i=node.selectInstance1()
+            if i==None:
+                break
+            instancia = instancias[i]
+            
+            while global_results[i][id1]!=-1 and global_results[i][id2] != -1: 
+                i = node.selectInstance1()
+                instancia = instancias[i]
+
+            p = multiprocessing.Process(target=node.executeAlgorithm1, args=(i,id1,instancia,pifile,return_dict))
+            jobs.append(p)
+            p.start()
+
+        for j in range(numproc//2):
+            i=node.selectInstance2()
+            if i==None:
+                break
+            instancia = instancias[i]
+
+            while global_results[i][id1]!=-1 and global_results[i][id2] != -1: 
+                i = node.selectInstance2()
+                instancia = instancias[i]
+
+            p = multiprocessing.Process(target=node.executeAlgorithm2, args=(i,id2,instancia,pifile,return_dict))
+            jobs.append(p)
+            p.start()
+        
+    for proc in jobs:
+        proc.join()
+        __numOfExecutions = __numOfExecutions + 1
+
+    #cambiar por guardar (LLave doble)
+
+    #returned=return_dict.items()
+
+    #print(returned)
+    keys = [key for key,value in return_dict.items()]
+    #print(keys)
+    for k in keys:
+        global_results[k[0]][k[1]] = return_dict[k]
+    #print (return_dict.values())
+
+
+
+    #parametersAlgos.clear()
+    if hash(node.alg1) in parametersAlgos.keys():
+        parametersAlgos.pop(hash(node.alg1))
+    if hash(node.alg2) in parametersAlgos.keys():
+        parametersAlgos.pop(hash(node.alg2))
+
+    with suppress_stdout():
+        parametersAlgos[hash(node.alg1)] = sampleParameters(getAlgResults(node.alg1))
+        parametersAlgos[hash(node.alg2)] = sampleParameters(getAlgResults(node.alg2))
+
+    '''
+    for n in s:
+        if hash(n.alg1) not in parametersAlgos:
+
+            parametersAlgos[hash(n.alg1)] = sampleParameters(getAlgResults(n.alg1))
+
+        if hash(n.alg2) not in parametersAlgos:
+
+            parametersAlgos[hash(n.alg2)] = sampleParameters(getAlgResults(n.alg2))
+    '''
